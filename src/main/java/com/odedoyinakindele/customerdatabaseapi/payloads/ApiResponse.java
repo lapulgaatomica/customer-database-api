@@ -1,7 +1,5 @@
 package com.odedoyinakindele.customerdatabaseapi.payloads;
 
-import java.util.List;
-
 public class ApiResponse {
 
     private String message;
