@@ -12,7 +12,7 @@ public class Customer {
     private String lastName;
     @Column(unique = true)
     private String email;
-    @OneToOne(optional = false)
+    @OneToOne(optional = false, cascade = CascadeType.PERSIST)
     private BillingDetail billingDetail;
 
     public Customer() {
