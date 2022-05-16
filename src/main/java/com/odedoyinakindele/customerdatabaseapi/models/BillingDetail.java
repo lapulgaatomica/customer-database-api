@@ -3,6 +3,7 @@ package com.odedoyinakindele.customerdatabaseapi.models;
 import com.odedoyinakindele.customerdatabaseapi.Enums.Tariff;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @Entity
 public class BillingDetail {
@@ -50,5 +51,18 @@ public class BillingDetail {
 
     public void setTariff(Tariff tariff) {
         this.tariff = tariff;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BillingDetail that = (BillingDetail) o;
+        return Objects.equals(id, that.id) && Objects.equals(accountNumber, that.accountNumber) && tariff == that.tariff;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, accountNumber, tariff);
     }
 }

@@ -1,6 +1,7 @@
 package com.odedoyinakindele.customerdatabaseapi.models;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @Entity
 public class Customer {
@@ -71,5 +72,18 @@ public class Customer {
 
     public void setBillingDetail(BillingDetail billingDetail) {
         this.billingDetail = billingDetail;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Customer customer = (Customer) o;
+        return Objects.equals(id, customer.id) && Objects.equals(firstName, customer.firstName) && Objects.equals(lastName, customer.lastName) && Objects.equals(email, customer.email) && Objects.equals(billingDetail, customer.billingDetail);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, firstName, lastName, email, billingDetail);
     }
 }

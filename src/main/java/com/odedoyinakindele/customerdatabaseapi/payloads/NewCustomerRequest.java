@@ -2,6 +2,7 @@ package com.odedoyinakindele.customerdatabaseapi.payloads;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.Objects;
 
 public class NewCustomerRequest {
     @NotBlank @NotNull
@@ -53,5 +54,18 @@ public class NewCustomerRequest {
 
     public void setBillingDetailRequest(BillingDetailRequest billingDetailRequest) {
         this.billingDetailRequest = billingDetailRequest;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NewCustomerRequest that = (NewCustomerRequest) o;
+        return Objects.equals(firstName, that.firstName) && Objects.equals(lastName, that.lastName) && Objects.equals(email, that.email) && Objects.equals(billingDetailRequest, that.billingDetailRequest);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(firstName, lastName, email, billingDetailRequest);
     }
 }

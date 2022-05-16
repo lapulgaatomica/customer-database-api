@@ -47,6 +47,7 @@ class CustomerControllerTest {
 
         BillingDetail billingDetail = new BillingDetail(1L, "1029389487-01", Tariff.FIRST);
         Customer customer = new Customer(1L, "firstName", "lastName", "email@email.com", billingDetail);
+        ApiResponse apiResponse = new ApiResponse.ResponseBuilder().setMessage("customer created").setResponseCode(HttpStatus.CREATED.value()).setData(customer).build();
         given(customerService.save(newCustomerRequest)).willReturn(customer);
 
         MockHttpServletResponse response = mvc.perform(
@@ -54,8 +55,9 @@ class CustomerControllerTest {
                         .content(jsonCustomerRequest.write(
                                 newCustomerRequest
                         ).getJson())).andReturn().getResponse();
+
         then(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
-        then(response.getStatus()).isNotEqualTo(HttpStatus.OK.value());
+        then(response.getContentAsString()).isEqualTo(jsonApiResponse.write(apiResponse).getJson());
     }
 
     @Test

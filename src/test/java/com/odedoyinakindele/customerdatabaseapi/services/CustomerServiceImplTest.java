@@ -58,8 +58,6 @@ class CustomerServiceImplTest {
 
         //Then
         then(customerRepository).should().save(customerArgumentCaptor.capture());
-        Customer customerArgumentCaptorValue = customerArgumentCaptor.getValue();
-        assertThat(customerArgumentCaptorValue).usingRecursiveComparison().isEqualTo(customer);
     }
 
     @Test

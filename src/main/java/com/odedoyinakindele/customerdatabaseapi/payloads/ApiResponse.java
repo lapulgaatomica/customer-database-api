@@ -1,5 +1,7 @@
 package com.odedoyinakindele.customerdatabaseapi.payloads;
 
+import java.util.Objects;
+
 public class ApiResponse {
 
     private String message;
@@ -70,5 +72,18 @@ public class ApiResponse {
 
     public void setResponseCode(int responseCode) {
         this.responseCode = responseCode;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ApiResponse that = (ApiResponse) o;
+        return responseCode == that.responseCode && Objects.equals(message, that.message) && Objects.equals(data, that.data);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(message, data, responseCode);
     }
 }
