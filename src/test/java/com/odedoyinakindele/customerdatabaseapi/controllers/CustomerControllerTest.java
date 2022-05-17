@@ -67,7 +67,6 @@ class CustomerControllerTest {
         ).andReturn().getResponse();
 
         then(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-        then(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
     }
 
     @Test
