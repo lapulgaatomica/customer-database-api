@@ -21,6 +21,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -76,5 +77,6 @@ class CustomerControllerTest {
         ).andReturn().getResponse();
 
         then(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+        then(true).isEqualTo(false);
     }
 }
