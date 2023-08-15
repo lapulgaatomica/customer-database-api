@@ -9,79 +9,141 @@ import com.odedoyinakindele.customerdatabaseapi.repositories.BillingDetailReposi
 import com.odedoyinakindele.customerdatabaseapi.repositories.CustomerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-class CustomerServiceImplTest {
+public class CustomerServiceImplTest {
+
     @Mock
     private CustomerRepository customerRepository;
+
     @Mock
     private BillingDetailRepository billingDetailRepository;
 
-    @Captor
-    private ArgumentCaptor<Customer> customerArgumentCaptor;
-
-    private CustomerService customerService;
+    @InjectMocks
+    private CustomerServiceImpl customerService;
 
     @BeforeEach
-    void setUp(){
-        customerService = new CustomerServiceImpl(customerRepository, billingDetailRepository);
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void shouldSaveWithCorrectInput() {
-        //Given
-        BillingDetailRequest billingDetailRequest = new BillingDetailRequest("1029389487-01", Tariff.FIRST);
-        NewCustomerRequest newCustomerRequest =
-                new NewCustomerRequest("firstName", "lastName", "email@email.com", billingDetailRequest);
-        BillingDetail billingDetail = new BillingDetail(1L, "1029389487-01", Tariff.FIRST);
-        Customer customer = new Customer(1L, "firstName", "lastName", "email@email.com", billingDetail);
-        given(customerRepository.findByEmail(newCustomerRequest.getEmail()))
-                .willReturn(Optional.empty());
-        given(billingDetailRepository.findByAccountNumber(billingDetailRequest.getAccountNumber()))
-                .willReturn(Optional.empty());
+    public void testSaveValidCustomer() {
+        BillingDetailRequest billingDetailRequest = new BillingDetailRequest("1234567890-01", Tariff.FIRST);
+        NewCustomerRequest newCustomerRequest = new NewCustomerRequest("John", "Doe", "john@example.com", billingDetailRequest);
 
-        //When
-        customerService.save(newCustomerRequest);
+        BillingDetail billingDetail = new BillingDetail("1234567890-01", Tariff.FIRST);
+        Customer expectedCustomer = new Customer("John", "Doe", "john@example.com", billingDetail);
 
-        //Then
-        then(customerRepository).should().save(customerArgumentCaptor.capture());
+        when(customerRepository.findByEmail("john@example.com")).thenReturn(Optional.empty());
+        when(billingDetailRepository.findByAccountNumber("1234567890-01")).thenReturn(Optional.empty());
+        when(customerRepository.save(any(Customer.class))).thenReturn(expectedCustomer);
+
+        Customer savedCustomer = customerService.save(newCustomerRequest);
+
+        assertNotNull(savedCustomer);
+        assertEquals("John", savedCustomer.getFirstName());
+        assertEquals("Doe", savedCustomer.getLastName());
+        assertEquals("john@example.com", savedCustomer.getEmail());
+        assertEquals("1234567890-01", savedCustomer.getBillingDetail().getAccountNumber());
+        assertEquals(Tariff.FIRST, savedCustomer.getBillingDetail().getTariff());
+
+        verify(customerRepository, times(1)).findByEmail("john@example.com");
+        verify(billingDetailRepository, times(1)).findByAccountNumber("1234567890-01");
+        verify(customerRepository, times(1)).save(any(Customer.class));
     }
 
     @Test
-    void get() {
-        //when
-        customerService.get();
+    public void testSaveCustomerWithExistingEmail() {
+        BillingDetailRequest billingDetailRequest = new BillingDetailRequest("1234567890-01", Tariff.FIRST);
+        NewCustomerRequest newCustomerRequest = new NewCustomerRequest("Jane", "Doe", "john@example.com", billingDetailRequest);
 
-        verify(customerRepository).findAll();
+        when(customerRepository.findByEmail("john@example.com")).thenReturn(Optional.of(new Customer()));
+
+        assertThrows(IllegalArgumentException.class, () -> customerService.save(newCustomerRequest));
+
+        verify(customerRepository, times(1)).findByEmail("john@example.com");
+        verify(billingDetailRepository, never()).findByAccountNumber(any());
+        verify(customerRepository, never()).save(any());
     }
 
     @Test
-    void testGet() {
-        //given
-        BillingDetailRequest billingDetailRequest = new BillingDetailRequest("1029389487-01", Tariff.FIRST);
-        NewCustomerRequest newCustomerRequest =
-                new NewCustomerRequest("firstName", "lastName", "email@email.com", billingDetailRequest);
-        BillingDetail billingDetail = new BillingDetail(1L, "1029389487-01", Tariff.FIRST);
-        Customer customer = new Customer(1L, "firstName", "lastName", "email@email.com", billingDetail);
-        given(customerRepository.findById(1L)).willReturn(Optional.of(customer));
+    public void testSaveCustomerWithInvalidAccountNumber() {
+        BillingDetailRequest billingDetailRequest = new BillingDetailRequest("1234567890-02", Tariff.FIRST);
+        NewCustomerRequest newCustomerRequest = new NewCustomerRequest("Alice", "Smith", "alice@example.com", billingDetailRequest);
 
-        //when
-        customerService.get(1L);
+        assertThrows(IllegalArgumentException.class, () -> customerService.save(newCustomerRequest));
 
-        //then
-        verify(customerRepository).findById(1L);
+        verify(customerRepository, times(1)).findByEmail("alice@example.com");
+        verify(billingDetailRepository, never()).findByAccountNumber(any());
+        verify(customerRepository, never()).save(any());
+    }
+
+    @Test
+    public void testSaveCustomerWithExistingAccountNumber() {
+        BillingDetailRequest billingDetailRequest = new BillingDetailRequest("1234567890-01", Tariff.FIRST);
+        NewCustomerRequest newCustomerRequest = new NewCustomerRequest("Bob", "Johnson", "bob@example.com", billingDetailRequest);
+
+        when(customerRepository.findByEmail("bob@example.com")).thenReturn(Optional.empty());
+        when(billingDetailRepository.findByAccountNumber("1234567890-01")).thenReturn(Optional.of(new BillingDetail()));
+
+        assertThrows(IllegalArgumentException.class, () -> customerService.save(newCustomerRequest));
+
+        verify(customerRepository, times(1)).findByEmail("bob@example.com");
+        verify(billingDetailRepository, times(1)).findByAccountNumber("1234567890-01");
+        verify(customerRepository, never()).save(any());
+    }
+
+    @Test
+    public void testGetCustomerById() {
+        long customerId = 1L;
+        Customer expectedCustomer = new Customer("John", "Doe", "john@example.com", new BillingDetail("1234567890-01", Tariff.FIRST));
+
+        when(customerRepository.findById(customerId)).thenReturn(Optional.of(expectedCustomer));
+
+        Customer retrievedCustomer = customerService.get(customerId);
+
+        assertNotNull(retrievedCustomer);
+        assertEquals("John", retrievedCustomer.getFirstName());
+        assertEquals("Doe", retrievedCustomer.getLastName());
+        assertEquals("john@example.com", retrievedCustomer.getEmail());
+
+        verify(customerRepository, times(1)).findById(customerId);
+    }
+
+    @Test
+    public void testGetCustomerByIdNotFound() {
+        long customerId = 1L;
+
+        when(customerRepository.findById(customerId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> customerService.get(customerId));
+
+        verify(customerRepository, times(1)).findById(customerId);
+    }
+
+    @Test
+    public void testGetAllCustomers() {
+        List<Customer> expectedCustomers = new ArrayList<>();
+        expectedCustomers.add(new Customer("John", "Doe", "john@example.com", new BillingDetail("1234567890-01", Tariff.FIRST)));
+        expectedCustomers.add(new Customer("Jane", "Smith", "jane@example.com", new BillingDetail("9876543210-01", Tariff.FIRST)));
+
+        when(customerRepository.findAll()).thenReturn(expectedCustomers);
+
+        List<Customer> retrievedCustomers = customerService.get();
+
+        assertNotNull(retrievedCustomers);
+        assertEquals(2, retrievedCustomers.size());
+
+        verify(customerRepository, times(1)).findAll();
     }
 }

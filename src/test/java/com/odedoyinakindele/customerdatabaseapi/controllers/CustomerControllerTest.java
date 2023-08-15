@@ -1,80 +1,77 @@
 package com.odedoyinakindele.customerdatabaseapi.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.odedoyinakindele.customerdatabaseapi.Enums.Tariff;
-import com.odedoyinakindele.customerdatabaseapi.models.BillingDetail;
 import com.odedoyinakindele.customerdatabaseapi.models.Customer;
-import com.odedoyinakindele.customerdatabaseapi.payloads.ApiResponse;
 import com.odedoyinakindele.customerdatabaseapi.payloads.BillingDetailRequest;
 import com.odedoyinakindele.customerdatabaseapi.payloads.NewCustomerRequest;
 import com.odedoyinakindele.customerdatabaseapi.services.CustomerService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.ArrayList;
 
-import static org.assertj.core.api.BDDAssertions.then;
-import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(SpringExtension.class)
-@AutoConfigureJsonTesters
 @WebMvcTest(CustomerController.class)
-class CustomerControllerTest {
+@AutoConfigureMockMvc
+public class CustomerControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockBean
     private CustomerService customerService;
-    @Autowired
-    private JacksonTester<ApiResponse> jsonApiResponse;
-    @Autowired
-    private JacksonTester<NewCustomerRequest> jsonCustomerRequest;
-    @Autowired
-    private MockMvc mvc;
 
     @Test
-    void save() throws Exception {
-        BillingDetailRequest billingDetailRequest = new BillingDetailRequest("1029389487-01", Tariff.FIRST);
-        NewCustomerRequest newCustomerRequest =
-                new NewCustomerRequest("firstName", "lastName", "email@email.com", billingDetailRequest);
+    public void testSaveCustomer() throws Exception {
+        BillingDetailRequest billingDetailRequest = new BillingDetailRequest("1234567890-01", Tariff.FIRST);
+        NewCustomerRequest request = new NewCustomerRequest("John", "Doe", "john@example.com", billingDetailRequest);
+        String requestJson = objectMapper.writeValueAsString(request);
 
-        BillingDetail billingDetail = new BillingDetail(1L, "1029389487-01", Tariff.FIRST);
-        Customer customer = new Customer(1L, "firstName", "lastName", "email@email.com", billingDetail);
-        ApiResponse apiResponse = new ApiResponse.ResponseBuilder().setMessage("customer created").setResponseCode(HttpStatus.CREATED.value()).setData(customer).build();
-        given(customerService.save(newCustomerRequest)).willReturn(customer);
+        when(customerService.save(any())).thenReturn(new Customer());
 
-        MockHttpServletResponse response = mvc.perform(
-                post("/api/v1/customer").contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonCustomerRequest.write(
-                                newCustomerRequest
-                        ).getJson())).andReturn().getResponse();
-
-        then(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
-        then(response.getContentAsString()).isEqualTo(jsonApiResponse.write(apiResponse).getJson());
+        mockMvc.perform(post("/api/v1/customer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.responseCode").value(201))
+                .andExpect(jsonPath("$.message").value("customer created"))
+                .andReturn();
     }
 
     @Test
-    void get() throws Exception {
-        MockHttpServletResponse response = mvc.perform(
-                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/customer")
-        ).andReturn().getResponse();
+    public void testGetCustomerById() throws Exception {
+        long customerId = 1L;
 
-        then(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+        when(customerService.get(customerId)).thenReturn(new Customer());
+
+        mockMvc.perform(get("/api/v1/customer/{id}", customerId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.responseCode").value(200))
+                .andExpect(jsonPath("$.message").value("customer found"))
+                .andReturn();
     }
 
     @Test
-    void testGet() throws Exception {
-        MockHttpServletResponse response = mvc.perform(
-                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/customer/1")
-        ).andReturn().getResponse();
+    public void testGetAllCustomers() throws Exception {
+        when(customerService.get()).thenReturn(new ArrayList<>());
 
-        then(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+        mockMvc.perform(get("/api/v1/customer"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.responseCode").value(200))
+                .andExpect(jsonPath("$.message").value("all customers"))
+                .andReturn();
     }
 }
